@@ -1,1 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Weekly Message Admin</title>
+  <link rel="stylesheet" href="./admin.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Weekly Message — Admin</h1>
+      <p class="subtle">Create, edit, publish Fr. Joe’s weekly message.</p>
+    </div>
+
+    <div class="card">
+      <form id="wm-form">
+        <label>Week start (Sunday)</label>
+        <input type="date" id="week_start" required>
+
+        <label>Title</label>
+        <input id="title" placeholder="Week of 7 September, 2025">
+
+        <label>Teaser (front page — short HTML)</label>
+        <textarea id="teaser_html" rows="5" placeholder="<p>First two–three sentences…</p>"></textarea>
+
+        <label>Full content (HTML)</label>
+        <textarea id="full_html" rows="10" placeholder="<div>Full content with paragraphs, headings, images…</div>"></textarea>
+
+        <label class="chk"><input type="checkbox" id="published"> Published</label>
+
+        <div class="row">
+          <button type="submit">Save (create/update)</button>
+          <button type="button" id="resetForm" class="ghost">Reset</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Recent messages</h2>
+      <div id="wm-list">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Supabase lib + your app script -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./admin.js"></script>
+</body>
+</html>
 
