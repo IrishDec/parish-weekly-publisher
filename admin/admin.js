@@ -1,98 +1,176 @@
-// 👉 Replace with YOUR real values
-const SUPABASE_URL = "https://bwjtrbxexxzowyjpbxtu.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3anRyYnhleHh6b3d5anBieHR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNzEwNzcsImV4cCI6MjA3Mjc0NzA3N30.zeo1fB1FSpwj2ayIIh_KIw4MBLfgSLVkhvJIeS516hc";
+// admin/admin.js
+// Minimal, production-friendly pattern. No build step required.
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const $ = id => document.getElementById(id);
-const form = $('wm-form'), list = $('wm-list');
-const week_start = $('week_start'), title = $('title');
-const teaser_html = $('teaser_html'), full_html = $('full_html');
-const published = $('published'), resetBtn = $('resetForm');
-
-function slugFromDate(dStr){
-  const d = new Date(dStr);
-  return isNaN(d) ? "" : d.toISOString().slice(0,10); // YYYY-MM-DD
+const cfg = window.__TOF_CFG__ || {};
+if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
+  console.error("Missing Supabase config: window.__TOF_CFG__");
+  alert("Missing Supabase config. Please set SUPABASE_URL and SUPABASE_ANON_KEY.");
 }
 
-async function loadList(){
-  try{
-    const { data, error } = await sb
-      .from('weekly_messages')
-      .select('id,title,week_start,slug,published')
-      .order('week_start',{ascending:false})
-      .limit(12);
+const supabase = createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
 
-    if (error) throw error;
-    if (!data?.length){ list.textContent = 'No messages yet.'; return; }
+// DOM refs
+const form = document.getElementById("message-form");
+const fields = {
+  id: document.getElementById("id"),
+  title: document.getElementById("title"),
+  week_start: document.getElementById("week_start"),
+  slug: document.getElementById("slug"),
+  teaser_html: document.getElementById("teaser_html"),
+  full_html: document.getElementById("full_html"),
+  published: document.getElementById("published"),
+};
+const tableBody = document.querySelector("#messages-table tbody");
+const emptyState = document.getElementById("empty-state");
+const refreshBtn = document.getElementById("refresh-btn");
+const resetBtn = document.getElementById("reset-btn");
 
-    list.innerHTML = data.map(r => `
-      <div class="wm-row" data-id="${r.id}">
-        <div>
-          <strong>${new Date(r.week_start).toLocaleDateString('en-IE',{day:'numeric',month:'long',year:'numeric'})}</strong>
-          — ${r.title ?? ''} ${r.published ? '<span class="badge">Published</span>' : '<span class="badge">Draft</span>'}
-        </div>
-        <div class="wm-actions">
-          <button data-act="edit" class="ghost">Edit</button>
-          <button data-act="toggle">${r.published ? 'Unpublish' : 'Publish'}</button>
-          <button data-act="delete" class="danger">Delete</button>
-        </div>
-      </div>
-    `).join('');
-  }catch(e){
-    list.textContent = 'Error: ' + (e?.message || e);
-  }
+// Helpers
+const todayIso = () => new Date().toISOString().slice(0, 10);
+const coerceBool = (v) => String(v) === "true";
+const toRow = (m) => `
+  <tr data-id="${m.id}">
+    <td>${escapeHtml(m.title || "")}</td>
+    <td>${m.week_start || ""}</td>
+    <td>${m.published ? "✅" : "—"}</td>
+    <td><code>${m.slug}</code></td>
+    <td class="actions">
+      <button data-action="edit">Edit</button>
+      <button data-action="toggle">${m.published ? "Unpublish" : "Publish"}</button>
+      <button data-action="delete">Delete</button>
+    </td>
+  </tr>
+`;
+
+// Very light HTML escape for table cells (admin form itself is trusted)
+function escapeHtml(s) {
+  return String(s || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
-list.addEventListener('click', async (e) => {
-  const btn = e.target.closest('button'); if (!btn) return;
-  const row = btn.closest('.wm-row'); const id = row?.dataset.id; if (!id) return;
+// Load
+async function loadMessages() {
+  const { data, error } = await supabase
+    .from("weekly_messages")
+    .select("*")
+    .order("week_start", { ascending: false });
 
-  if (btn.dataset.act === 'delete'){
-    if (!confirm('Delete this message?')) return;
-    const { error } = await sb.from('weekly_messages').delete().eq('id', id);
-    if (error) return alert(error.message);
-    loadList(); return;
+  if (error) {
+    console.error(error);
+    alert("Failed to load messages.");
+    return;
   }
 
-  if (btn.dataset.act === 'toggle'){
-    const makePublished = /Publish/.test(btn.textContent);
-    const { error } = await sb.from('weekly_messages').update({ published: makePublished }).eq('id', id);
-    if (error) return alert(error.message);
-    loadList(); return;
-  }
+  tableBody.innerHTML = (data || []).map(toRow).join("");
+  emptyState.style.display = data && data.length ? "none" : "block";
+}
 
-  if (btn.dataset.act === 'edit'){
-    const { data, error } = await sb.from('weekly_messages').select('*').eq('id', id).single();
-    if (error) return alert(error.message);
-    week_start.value = data.week_start?.slice(0,10) || '';
-    title.value = data.title || '';
-    teaser_html.value = data.teaser_html || '';
-    full_html.value = data.full_html || '';
-    published.checked = !!data.published;
-    window.scrollTo({ top: form.offsetTop - 20, behavior: 'smooth' });
-  }
+// Reset form
+function resetForm() {
+  fields.id.value = "";
+  fields.title.value = "";
+  fields.week_start.value = todayIso();
+  fields.slug.value = fields.week_start.value; // default slug to week_start
+  fields.teaser_html.value = "";
+  fields.full_html.value = "";
+  fields.published.value = "false";
+  form.querySelector("#save-btn").textContent = "Save";
+}
+
+// Autoset slug when week_start changes (if slug untouched)
+fields.week_start.addEventListener("change", () => {
+  if (!fields.slug.value) fields.slug.value = fields.week_start.value;
 });
 
-form.addEventListener('submit', async (e) => {
+// Save (create or update)
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const ws = week_start.value;
+
   const payload = {
-    week_start: ws,
-    slug: slugFromDate(ws),
-    title: title.value.trim(),
-    teaser_html: teaser_html.value.trim(),
-    full_html: full_html.value.trim(),
-    published: published.checked
+    title: fields.title.value?.trim() || null,
+    week_start: fields.week_start.value,
+    slug: fields.slug.value,
+    teaser_html: fields.teaser_html.value || null,
+    full_html: fields.full_html.value,
+    published: coerceBool(fields.published.value),
   };
-  const { error } = await sb.from('weekly_messages').upsert(payload, { onConflict: 'slug' });
-  if (error) return alert(error.message);
-  alert('Saved.');
-  form.reset();
-  loadList();
+
+  // Basic guardrails
+  if (!payload.week_start || !payload.slug || !payload.full_html) {
+    alert("week_start, slug, and full_html are required.");
+    return;
+  }
+
+  const id = fields.id.value;
+
+  let resp;
+  if (id) {
+    resp = await supabase.from("weekly_messages").update(payload).eq("id", id).select().single();
+  } else {
+    resp = await supabase.from("weekly_messages").insert(payload).select().single();
+  }
+
+  const { data, error } = resp;
+  if (error) {
+    console.error(error);
+    alert(error.message || "Save failed.");
+    return;
+  }
+
+  resetForm();
+  await loadMessages();
+  // Put the just-saved row into edit mode for convenience
+  if (data?.id) loadIntoForm(data);
 });
 
-resetBtn.addEventListener('click', () => form.reset());
+// Edit / delete / toggle publish
+tableBody.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  const tr = e.target.closest("tr");
+  const id = tr?.dataset?.id;
+  if (!id) return;
 
-loadList();
+  const action = btn.dataset.action;
+  if (action === "edit") {
+    const { data, error } = await supabase.from("weekly_messages").select("*").eq("id", id).single();
+    if (error) return alert("Could not load record.");
+    loadIntoForm(data);
+  } else if (action === "delete") {
+    if (!confirm("Delete this message? This cannot be undone.")) return;
+    const { error } = await supabase.from("weekly_messages").delete().eq("id", id);
+    if (error) return alert("Delete failed.");
+    await loadMessages();
+  } else if (action === "toggle") {
+    const { data: current, error: err1 } = await supabase
+      .from("weekly_messages").select("published").eq("id", id).single();
+    if (err1) return alert("Could not fetch current status.");
+    const { error: err2 } = await supabase
+      .from("weekly_messages").update({ published: !current.published }).eq("id", id);
+    if (err2) return alert("Update failed.");
+    await loadMessages();
+  }
+});
+
+function loadIntoForm(m) {
+  fields.id.value = m.id;
+  fields.title.value = m.title || "";
+  fields.week_start.value = m.week_start || "";
+  fields.slug.value = m.slug || "";
+  fields.teaser_html.value = m.teaser_html || "";
+  fields.full_html.value = m.full_html || "";
+  fields.published.value = String(!!m.published);
+  form.querySelector("#save-btn").textContent = "Update";
+}
+
+refreshBtn.addEventListener("click", loadMessages);
+resetBtn.addEventListener("click", resetForm);
+
+// Init
+resetForm();
+loadMessages();
 
