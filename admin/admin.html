@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weekly Messages Admin</title>
+  <link rel="stylesheet" href="./admin.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Weekly Messages Admin</h1>
+    <form id="message-form">
+      <input type="hidden" id="id" />
+      <label>Title<input id="title" /></label>
+      <label>Week start (YYYY-MM-DD)<input id="week_start" type="date" /></label>
+      <label>Slug<input id="slug" placeholder="YYYY-MM-DD" /></label>
+      <label>Published?
+        <select id="published"><option value="false">No</option><option value="true">Yes</option></select>
+      </label>
+      <label>Teaser HTML<textarea id="teaser_html" rows="4"></textarea></label>
+      <label>Full HTML<textarea id="full_html" rows="8"></textarea></label>
+      <button type="submit" id="save-btn">Save</button>
+      <button type="button" id="reset-btn">Reset</button>
+    </form>
+    <table id="messages-table"><thead><tr><th>Title</th><th>Week</th><th>Published</th><th>Slug</th><th>Actions</th></tr></thead><tbody></tbody></table>
+    <p id="empty-state" style="display:none;">No messages yet.</p>
+  </div>
+  <script type="module">
+    import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.local.js';
+    window.__TOF_CFG__ = { SUPABASE_URL, SUPABASE_ANON_KEY };
+  </script>
+  <script type="module" src="./admin.js"></script>
+</body>
+</html>
