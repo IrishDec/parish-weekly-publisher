@@ -1,5 +1,5 @@
 [README.md](https://github.com/user-attachments/files/22198820/README.md)
-[Uploadin# Trinity of Faith — Weekly Messages Micro-CMS
+# Trinity of Faith — Weekly Messages Micro-CMS
 
 A super-light CMS: a password-protected WordPress admin page writes to Supabase; the homepage shows a “teaser” and an archive lists published messages — both reading from Supabase.
 
