@@ -1,29 +1,24 @@
-Trinity of Faith — Weekly Messages Micro-CMS
+# Trinity of Faith — Weekly Messages Micro-CMS
 
-A super-light CMS: a password-protected WordPress admin page writes to Supabase; the homepage shows a “teaser” and an archive lists published messages — both reading from Supabase.
+A super-light CMS: a password-protected WordPress admin page writes to Supabase; the homepage shows a teaser and an archive lists published messages — both reading from Supabase.
 
-Architecture (low-tech, by design)
-WordPress (WP)
+## Architecture (low-tech, by design)
 
-Admin page: Password-protected page that runs a tiny JS admin app (CRUD + publish toggle).
+### WordPress
+- **Admin page:** password-protected page running a tiny JS admin (CRUD + publish).
+- **Homepage widget:** reads latest published teaser from Supabase.
+- **Archive widget:** lists all published messages (`title` + `full_html`) from Supabase.
 
-Homepage widget: Reads the latest published teaser from Supabase.
+### Supabase
+- **Single table:** `weekly_messages`.
+- **RLS:** on  
+  - `SELECT` allowed only when `published = true`.  
+  - `INSERT/UPDATE/DELETE` temporarily allowed for the `anon` role (admin page is password-gated). _Plan: move to Supabase Auth and tighten._
 
-Archive widget: Lists all published messages (title + full_html) from Supabase.
+### Table (source of truth)
 
-Supabase
-
-Single table: weekly_messages.
-
-RLS: On.
-
-SELECT allowed only when published = true.
-
-INSERT/UPDATE/DELETE temporarily allowed for the anon role (because WP admin page is gated by password).
-Plan: switch to Supabase Auth and tighten to authenticated only.
-
-Table (source of truth)
-weekly_messages (
+```sql
+create table if not exists weekly_messages (
   id          uuid primary key default gen_random_uuid(),
   title       text,
   week_start  date not null,
@@ -32,12 +27,15 @@ weekly_messages (
   full_html   text not null,
   published   boolean not null default false,
   created_at  timestamptz default now()
-)
+);
 
-
-A CHECK constraint enforces slug looks like YYYY-MM-DD.
-
+-- Optional: enforce YYYY-MM-DD slugs
+alter table weekly_messages
+  add constraint weekly_messages_slug_format
+  check (slug ~ '^\d{4}-\d{2}-\d{2}$');
 Repo layout
+pgsql
+Copy code
 admin/                 # admin page assets (no secrets)
   admin.html           # standalone admin page (for local/portfolio)
   admin.css            # admin UI styles
@@ -51,10 +49,8 @@ supabase/
     setup.sql          # table + constraints + RLS policies
 
 .gitignore             # ignores admin/config.local.js
-
 Quickstart
 1) Supabase
-
 Create a project.
 
 SQL Editor → run supabase/sql/setup.sql.
@@ -62,19 +58,19 @@ SQL Editor → run supabase/sql/setup.sql.
 Project Settings → API → copy Project URL and anon key.
 
 2) Local admin (portfolio/dev)
-
 Copy admin/config.example.js → admin/config.local.js (do not commit).
 
 Fill in SUPABASE_URL and SUPABASE_ANON_KEY.
 
-Open admin/admin.html via a static server (any works).
+Serve admin/admin.html with any static server.
 
 The admin reads config from window.__TOF_CFG__, set by config.local.js locally, and by an inline snippet when embedded in WordPress.
 
 3) WordPress embed (production)
+Create a password-protected page and add a Custom HTML block:
 
-Create a password-protected page and add a Custom HTML block with:
-
+html
+Copy code
 <script>
   window.__TOF_CFG__ = {
     SUPABASE_URL: "https://YOUR-PROJECT.supabase.co",
@@ -83,34 +79,52 @@ Create a password-protected page and add a Custom HTML block with:
 </script>
 <link rel="stylesheet" href="https://your-site.example/wp-content/uploads/admin.css">
 <script src="https://your-site.example/wp-content/uploads/admin.js"></script>
-
 4) Widgets (homepage & archive)
+Homepage: render latest teaser
 
-Homepage: SELECT * FROM weekly_messages WHERE published = true ORDER BY week_start DESC LIMIT 1; → render teaser_html.
+sql
+Copy code
+select * from weekly_messages
+where published = true
+order by week_start desc
+limit 1;
+Archive: list all published
 
-Archive: SELECT title, full_html FROM weekly_messages WHERE published = true ORDER BY week_start DESC;.
-
+sql
+Copy code
+select title, full_html from weekly_messages
+where published = true
+order by week_start desc;
 Security notes (current posture)
+Admin is protected by a WP page password.
 
-Admin is protected by the WP page password.
-
-RLS only exposes SELECT for published = true.
+RLS exposes SELECT only for published = true.
 
 Writes are temporarily allowed to anon for low friction on a password-gated page.
-Next step: enable Supabase Auth and restrict writes to authenticated with role checks.
+Next: enable Supabase Auth and restrict writes to authenticated with role checks.
 
-Since *_html fields are rendered, ensure only trusted staff can access the admin page.
+Since *_html is rendered, only trusted staff should access the admin page.
 
 Roadmap
-
-Switch to Supabase Auth (email magic-link/OAuth) and tighten policies.
+Switch to Supabase Auth (magic-link/OAuth) and tighten policies.
 
 Add validations, auto-slug from week_start, and confirm dialogs.
 
-Small UI polish: homepage spacing + “News by Church” alignment (CSS).
+Small UI polish: homepage spacing + “News by Church” alignment.
 
-Optional: simple screenshots/GIF of the editor and front page teaser.
+Optional: screenshots/GIFs of the editor and front-page teaser.
 
 License
-
 MIT (or your preference).
+
+
+
+
+
+
+
+
+
+
+
+
