@@ -22,8 +22,19 @@
       <button type="submit" id="save-btn">Save</button>
       <button type="button" id="reset-btn">Reset</button>
     </form>
-    <table id="messages-table"><thead><tr><th>Title</th><th>Week</th><th>Published</th><th>Slug</th><th>Actions</th></tr></thead><tbody></tbody></table>
-    <p id="empty-state" style="display:none;">No messages yet.</p>
+<table id="messages-table">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Updated by</th>
+      <th>Published</th>
+      <th>Slug</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
   </div>
   <script type="module">
     import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.local.js';
