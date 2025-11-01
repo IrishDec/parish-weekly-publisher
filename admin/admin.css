@@ -109,5 +109,90 @@ th, td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: 
     font-size: 0.95rem;
   }
 }
+/* --- ADMIN FORM CLEANUP --- */
+
+#wm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 860px;
+}
+
+#wm-form label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+#wm-form input[type="text"],
+#wm-form input[type="date"],
+#wm-form input[type="email"],
+#wm-form input:not([type]),
+#wm-form textarea,
+#wm-form select {
+  font-size: 1rem;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#wm-form #title {
+  width: 100%;
+  max-width: 100%;
+}
+
+#wm-form button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #0073aa;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+#wm-form button.ghost {
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+#wm-form button:hover {
+  background: #005b88;
+}
+
+#messages-table {
+  margin-top: 2rem;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#messages-table th,
+#messages-table td {
+  border-bottom: 1px solid #eee;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+#messages-table th {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 700px) {
+  #wm-form {
+    gap: 0.75rem;
+  }
+  #wm-form input,
+  #wm-form textarea {
+    font-size: 0.95rem;
+  }
+}
 
 
